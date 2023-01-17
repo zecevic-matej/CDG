@@ -4,7 +4,7 @@
 
 ##### [discuss.causality.link](discuss.causality.link)
 
-<img src="media/CDG-logo.jpg" style="zoom:50%;" />
+<img src="media/CDG-logo.jpg" style="zoom:35%;" />
 
 The official repository of the Causality Discussion Group. As of now, the scraper for the paper list is the only code element of the group.
 
