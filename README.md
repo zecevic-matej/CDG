@@ -1,8 +1,11 @@
 #### Causality Discussion Group
 
+*Join the Discussion!*
+We get together with the authors of papers in Causality x AI/ML to discuss their papers in a lively group discussion. We meet weekly on Wednesday at 15:30 UTC / 16:30 CEST/CET in summer/winter / 10:30 EST / 23:30 JST.
+
 ---
 
-##### [discuss.causality.link](discuss.causality.link)
+##### Everything @ [discuss.causality.link](https://discuss.causality.link)
 
 <img src="media/CDG-logo.jpg" width="250" height="250" />
 
