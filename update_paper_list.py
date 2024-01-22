@@ -5,8 +5,10 @@ from datetime import datetime
 date_time = datetime.now()
 str_date_time = date_time.strftime("%Y%m%d")
 
-username = "XXX" # for OpenReview scraping
-pwd = "YYY"
+# Here you provide your credentials
+# or run in a live environment a la iPython
+#username = "XXX" # for OpenReview scraping
+#pwd = "YYY"
 
 
 # strings to search for
@@ -74,12 +76,12 @@ def scrape_mlr_proceedings(proceedings_url, conf=None):
             d.update({ind: {"title": title, "authors": authors, "url": url, "conference": conf}})
     return d
 
-def scrape_clear_papers(proceedings_url, conf=None):
+def scrape_clear_papers(proceedings_url, conf=None, year=2022):
     """
     One needs an OpenReview account to use the API as regular scraping is not possible
     """
     import openreview
-    year = int(proceedings_url.split("/")[-3]) # make sure you get the year
+    #year = int(proceedings_url.split("/")[-3]) # make sure you get the year
     if year < 2022:
         return Exception("Capture year first.")
     if username is None or pwd is None:
@@ -100,14 +102,15 @@ def scrape_clear_papers(proceedings_url, conf=None):
         d.update({ind: {"title": title, "authors": authors, "url": url, "conference": conf}})
     return d
 
-def scrape_neurips_openreview(proceedings_url, conf=None):
+def scrape_neurips_iclr_openreview(proceedings_url, conf=None, year=2022):
     """
     One needs an OpenReview account to use the API as regular scraping is not possible
     This function is a bit different than the others, as it will capture papers that contain the keywords
     within any of the Meta-Data including Abstract, TL;DR, Tags (so not just title)
+    conf = NeurIPS or ICLR
     """
     import openreview
-    year = int(proceedings_url.split("/")[-3]) # make sure you get the year
+    #year = int(proceedings_url.split("/")[-3]) # make sure you get the year
     if year < 2022:
         return Exception("Capture year first.")
     if username is None or pwd is None:
@@ -116,7 +119,8 @@ def scrape_neurips_openreview(proceedings_url, conf=None):
                                username=username,
                                password=pwd)
     # venues = client.get_group(id='venues').members
-    papers = client.get_all_notes(invitation=f'NeurIPS.cc/{year}/Conference/-/Blind_Submission')
+    venueid = f'{conf}.cc/{year}/Conference'
+    papers = client.get_all_notes(content={'venueid':f'{conf}.cc/{year}/Conference'})
     d = {}
     for k in keywords:
         papers_filtered = [(ind,p) for (ind,p) in enumerate(papers) if k in str(p).lower()]
@@ -134,22 +138,25 @@ def scrape_neurips_openreview(proceedings_url, conf=None):
 The following list contains all the proceedings to be scraped.
 """
 proceedings = [
-    (scrape_neurips_proceeding, "https://papers.nips.cc/paper/2021", "NeurIPS 2021"), # NeurIPS 2021
-    (scrape_neurips_openreview, "https://openreview.net/group?id=NeurIPS.cc/2022/Conference/", "NeurIPS 2022"), # (scrape_neurips_announcement,"https://nips.cc/Conferences/2022/Schedule?type=Poster", "NeurIPS 2022"),
+    # (scrape_neurips_proceeding, "https://papers.nips.cc/paper/2021", "NeurIPS 2021"), # NeurIPS 2021
+    # (scrape_neurips_openreview, "https://openreview.net/group?id=NeurIPS.cc/2022/Conference/", "NeurIPS 2022"), # (scrape_neurips_announcement,"https://nips.cc/Conferences/2022/Schedule?type=Poster", "NeurIPS 2022"),
+    #
+    # (scrape_mlr_proceedings, "https://proceedings.mlr.press/v139/", "ICML 2021"), # ICML 2021
+    # (scrape_mlr_proceedings, "https://proceedings.mlr.press/v162/", "ICML 2022"),
+    #
+    # (None, "https://aaai.org/Conferences/AAAI-21/wp-content/uploads/2020/12/AAAI-21_Accepted-Paper-List.Main_.Technical.Track_.pdf", "AAAI 2021"), # note how AAAI uses PDF # AAAI 2021
+    # (None, "https://aaai.org/Conferences/AAAI-22/wp-content/uploads/2021/12/AAAI-22_Accepted_Paper_List_Main_Technical_Track.pdf", "AAAI 2022"),
+    #
+    # (None, "https://www.auai.org/uai2021/accepted_papers", "UAI 2021"), # UAI 2021
+    # (None, "https://www.auai.org/uai2022/accepted_papers", "UAI 2022"),
+    #
+    # (scrape_mlr_proceedings, "https://proceedings.mlr.press/v130/", "AIStats 2021"), # AIStats 2021
+    # (scrape_mlr_proceedings, "https://proceedings.mlr.press/v151/", "AIStats 2022"),
 
-    (scrape_mlr_proceedings, "https://proceedings.mlr.press/v139/", "ICML 2021"), # ICML 2021
-    (scrape_mlr_proceedings, "https://proceedings.mlr.press/v162/", "ICML 2022"),
+    (scrape_clear_papers, "https://openreview.net/group?id=cclear.cc/CLeaR/2023/Conference/", "CLeaR", 2023), # CLeaR 2022
+    # not working currently, contacted OR, 22.01.2024 #(scrape_neurips_iclr_openreview, "https://openreview.net/group?id=NeurIPS.cc/2023/Conference/", "NeurIPS", 2023),
+    (scrape_neurips_iclr_openreview, "https://openreview.net/group?id=ICLR.cc/2023/Conference/", "ICLR", 2023),
 
-    (None, "https://aaai.org/Conferences/AAAI-21/wp-content/uploads/2020/12/AAAI-21_Accepted-Paper-List.Main_.Technical.Track_.pdf", "AAAI 2021"), # note how AAAI uses PDF # AAAI 2021
-    (None, "https://aaai.org/Conferences/AAAI-22/wp-content/uploads/2021/12/AAAI-22_Accepted_Paper_List_Main_Technical_Track.pdf", "AAAI 2022"),
-
-    (None, "https://www.auai.org/uai2021/accepted_papers", "UAI 2021"), # UAI 2021
-    (None, "https://www.auai.org/uai2022/accepted_papers", "UAI 2022"),
-
-    (scrape_mlr_proceedings, "https://proceedings.mlr.press/v130/", "AIStats 2021"), # AIStats 2021
-    (scrape_mlr_proceedings, "https://proceedings.mlr.press/v151/", "AIStats 2022"),
-
-    (scrape_clear_papers, "https://openreview.net/group?id=cclear.cc/CLeaR/2022/Conference/", "CLeaR 2022"), # CLeaR 2022
 ]
 
 # location where paper list is being saved
@@ -158,11 +165,11 @@ save_path = f"Paper-List-{str_date_time}.csv"
 # scrape procedure for all proceedings
 results = []
 sum_papers = 0
-for (f,p,c) in proceedings:
+for (f,p,c,y) in proceedings:
     if f is None:
         print(f"Skipping {p} since scraper not implemented")
         continue
-    papers = f(p,c)
+    papers = f(p,c,y)
     sum_papers += len(papers)
     results.append(papers)
 print(f"**** Scraping Complete: A total of {sum_papers} papers found across {len(proceedings)} proceedings.")
