@@ -76,7 +76,7 @@ def scrape_mlr_proceedings(proceedings_url, conf=None):
             d.update({ind: {"title": title, "authors": authors, "url": url, "conference": conf}})
     return d
 
-def scrape_clear_papers(proceedings_url, conf=None, year=2022):
+def scrape_clear_papers(proceedings_url, conf=None, year=2022, api=""):
     """
     One needs an OpenReview account to use the API as regular scraping is not possible
     """
@@ -86,7 +86,7 @@ def scrape_clear_papers(proceedings_url, conf=None, year=2022):
         return Exception("Capture year first.")
     if username is None or pwd is None:
         return Exception("Provide your OpenReview Credentials first.")
-    client = openreview.Client(baseurl='https://api.openreview.net',
+    client = openreview.Client(baseurl=f'https://api{api}.openreview.net',
                                username=username,
                                password=pwd)
     # venues = client.get_group(id='venues').members
@@ -98,11 +98,13 @@ def scrape_clear_papers(proceedings_url, conf=None, year=2022):
     for (ind,p) in enumerate(papers):
         title = p.content["title"]
         authors = ", ".join(p.content["authors"])
+        if "anonymous" in authors.lower():
+            continue
         url = "https://openreview.net" + p.content["pdf"]
         d.update({ind: {"title": title, "authors": authors, "url": url, "conference": conf}})
     return d
 
-def scrape_neurips_iclr_openreview(proceedings_url, conf=None, year=2022):
+def scrape_neurips_iclr_openreview(proceedings_url, conf=None, year=2022, api=1):
     """
     One needs an OpenReview account to use the API as regular scraping is not possible
     This function is a bit different than the others, as it will capture papers that contain the keywords
@@ -115,7 +117,7 @@ def scrape_neurips_iclr_openreview(proceedings_url, conf=None, year=2022):
         return Exception("Capture year first.")
     if username is None or pwd is None:
         return Exception("Provide your OpenReview Credentials first.")
-    client = openreview.Client(baseurl='https://api.openreview.net',
+    client = openreview.Client(baseurl=f'https://api{api}.openreview.net',
                                username=username,
                                password=pwd)
     # venues = client.get_group(id='venues').members
@@ -126,9 +128,22 @@ def scrape_neurips_iclr_openreview(proceedings_url, conf=None, year=2022):
         papers_filtered = [(ind,p) for (ind,p) in enumerate(papers) if k in str(p).lower()]
         print(f"Searching {proceedings_url}, Found {len(papers_filtered)} papers with keyword {k} (somewhere in meta data, not just in title)")
         for (ind,p) in papers_filtered:
-            title = p.content["title"]
-            authors = ", ".join(p.content["authors"])
-            url = "https://openreview.net" + p.content["pdf"]
+            if isinstance(p.content['title'], dict):
+                title = p.content['title']["value"]
+            else:
+                title = p.content["title"]
+            if isinstance(p.content['authors'], dict):
+                authors_suffix = p.content['authors']["value"]
+            else:
+                authors_suffix = p.content['authors']
+            authors = ", ".join(authors_suffix)
+            if "anonymous" in authors.lower():
+                continue
+            if isinstance(p.content['pdf'],dict):
+                url_suffix = p.content["pdf"]["value"]
+            else:
+                url_suffix = p.content["pdf"]
+            url = "https://openreview.net" + url_suffix
             d.update({ind: {"title": title, "authors": authors, "url": url, "conference": conf}})
     return d
 
@@ -153,9 +168,9 @@ proceedings = [
     # (scrape_mlr_proceedings, "https://proceedings.mlr.press/v130/", "AIStats 2021"), # AIStats 2021
     # (scrape_mlr_proceedings, "https://proceedings.mlr.press/v151/", "AIStats 2022"),
 
-    (scrape_clear_papers, "https://openreview.net/group?id=cclear.cc/CLeaR/2023/Conference/", "CLeaR", 2023), # CLeaR 2022
-    # not working currently, contacted OR, 22.01.2024 #(scrape_neurips_iclr_openreview, "https://openreview.net/group?id=NeurIPS.cc/2023/Conference/", "NeurIPS", 2023),
-    (scrape_neurips_iclr_openreview, "https://openreview.net/group?id=ICLR.cc/2023/Conference/", "ICLR", 2023),
+    (scrape_clear_papers, "https://openreview.net/group?id=cclear.cc/CLeaR/2023/Conference/", "CLeaR", 2023, _), # CLeaR 2022
+    (scrape_neurips_iclr_openreview, "https://openreview.net/group?id=NeurIPS.cc/2023/Conference/", "NeurIPS", 2023, 2), # requires API version 2
+    (scrape_neurips_iclr_openreview, "https://openreview.net/group?id=ICLR.cc/2023/Conference/", "ICLR", 2023, _),
 
 ]
 
@@ -165,11 +180,11 @@ save_path = f"Paper-List-{str_date_time}.csv"
 # scrape procedure for all proceedings
 results = []
 sum_papers = 0
-for (f,p,c,y) in proceedings:
+for (f,p,c,y,a) in proceedings:
     if f is None:
         print(f"Skipping {p} since scraper not implemented")
         continue
-    papers = f(p,c,y)
+    papers = f(p,c,y,a)
     sum_papers += len(papers)
     results.append(papers)
 print(f"**** Scraping Complete: A total of {sum_papers} papers found across {len(proceedings)} proceedings.")
